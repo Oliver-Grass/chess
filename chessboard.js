@@ -144,10 +144,14 @@ if (RUN_ASSERTS) {
         HELPERS
 =========================
 */
+function highlightSquare(square) {
+  document.getElementById(square).classList.add('highlight');
+}
+
 function removeHighlight() {
   const squares = document.getElementsByClassName('highlight');
-  for (square of squares) {
-    square.classList.remove('highlight');
+  while (squares.length) {
+    squares[0].classList.remove('highlight');
   }
 }
 
@@ -315,7 +319,7 @@ function calculatePositionFromMoves(position, moves) {
 
 let currentOrientation = 'white';
 let currentPosition = {};
-let color_scheme = COLOR_SCHEMES.brown;
+let squareSize = 50;
 
 /*
 =========================
@@ -338,6 +342,11 @@ const generateBoardHTML = (orientation) => {
     columns.reverse();
     row = 1;
   }
+
+  const pgn = document.createElement('div');
+  pgn.id = 'pgn';
+  pgn.innerHTML =
+    '1. e4 e5 2. Nf3 Nf6 3. Bc4 1. e4 e5 2. Nf3 Nf6 3. Bc4 1. e4 e5 2. Nf3 Nf6 3. Bc4 1. e4 e5 2. Nf3 Nf6 3. Bc4';
 
   const table = document.createElement('table');
   for (let i = 0; i < 8; i++) {
@@ -362,6 +371,7 @@ const generateBoardHTML = (orientation) => {
     }
   }
   boardDiv.appendChild(table);
+  boardDiv.appendChild(pgn);
 };
 
 const putPiecesOnBoard = (position) => {
@@ -369,12 +379,19 @@ const putPiecesOnBoard = (position) => {
     const td = document.getElementById(square);
     td.innerHTML = `
     <div class="piece">
-      <img src="./img/${piece}.svg" height="50px" width="50px"></img>
+      <img src="./img/${piece}.svg" height="100%" width="100%"></img>
     </div>`;
   }
 };
 
-const drawBoard = (orientation, position) => {
+const drawBoard = (position = currentPosition, orientation = currentOrientation) => {
+  currentPosition = deepCopy(position);
+  if (validFen(currentPosition)) {
+    currentPosition = fenToObj(currentPosition);
+  } else if (!validPositionObject(currentPosition)) {
+    console.error('Invalid Position!');
+  }
+
   generateBoardHTML(orientation);
   putPiecesOnBoard(position);
   addEventListeners();
@@ -385,21 +402,25 @@ const setColorScheme = (colorScheme) => {
   document.body.style.setProperty('--dark-square', COLOR_SCHEMES[colorScheme][1]);
 };
 
+const setBoardSize = (boardSize) => {
+  squareSize = boardSize / 8;
+  document.body.style.setProperty('--square-size', `${squareSize}px`);
+};
+
 const flipBoard = () => {
   currentOrientation = currentOrientation === 'white' ? 'black' : 'white';
-  drawBoard(currentOrientation, currentPosition);
+  drawBoard();
+  return currentOrientation;
 };
 
 function makeMove(source, target) {
-  source = source.toString();
-  target = target.toString();
   const move = `${source}-${target}`;
   if (!validMove(move)) return;
 
   const moves = [move];
   const newPosition = calculatePositionFromMoves(currentPosition, moves);
   currentPosition = deepCopy(newPosition);
-  drawBoard(currentOrientation, currentPosition);
+  drawBoard();
 }
 
 /*
@@ -409,19 +430,37 @@ function makeMove(source, target) {
 */
 
 function drag(e) {
-  removeHighlight();
-  let img = new Image();
+  const source = e.target.id;
+  const piece = getPiece(source, currentPosition);
+
+  let img = new Image(squareSize, squareSize);
   img.src = `./img/${getPiece(e.target.id, currentPosition)}.svg`;
 
   e.dataTransfer.setData('square', e.target.id);
   e.dataTransfer.setDragImage(img, 20, 20);
+
+  if (isFunction(config.onDrag)) {
+    config.onDrag(source, piece, deepCopy(currentPosition), currentOrientation);
+  }
 }
 
 function drop(e) {
   e.preventDefault();
+
   const source = e.dataTransfer.getData('square');
   const target = e.target.id;
-  makeMove(source, target);
+
+  if (isFunction(config.onDrop)) {
+    const onDrop = config.onDrop(source, target, deepCopy(currentPosition), currentOrientation);
+
+    if (onDrop) {
+      makeMove(source, target);
+    } else {
+      //dont
+    }
+  } else {
+    makeMove(source, target);
+  }
 }
 
 function allowDrop(e) {
@@ -432,30 +471,50 @@ if (CLICKMOVE) {
   let selectedPiece = '';
 
   function boardClick(e) {
-    const square = e.target;
-    const targetSquare = e.target.id.toString();
+    const square = e.target.id.toString();
     removeHighlight();
 
-    const targetColor = getPieceColor(getPiece(targetSquare, currentPosition));
+    const targetColor = getPieceColor(getPiece(square, currentPosition));
     const sourceColor = getPieceColor(getPiece(selectedPiece, currentPosition));
 
     if (targetColor !== sourceColor && selectedPiece !== '') {
-      makeMove(selectedPiece, targetSquare);
+      makeMove(selectedPiece, square);
       selectedPiece = '';
     } else {
-      square.classList.add('highlight');
-      selectedPiece = targetSquare;
+      //highlightSquare(square);
+      selectedPiece = square;
     }
   }
 } else {
   function boardClick(e) {
-    const square = e.target;
-    const piece = e.target.id;
-    removeHighlight();
+    const square = e.target.id.toString();
+    //removeHighlight();
 
-    if (currentPosition.hasOwnProperty(piece)) {
-      square.classList.add('highlight');
+    if (currentPosition.hasOwnProperty(square)) {
+      //highlightSquare(square);
     }
+  }
+}
+
+/*
+CUSTOM FUNCTIONS
+*/
+
+function mouseenterSquare(e) {
+  const square = e.currentTarget.id;
+  const piece = getPiece(square, currentPosition);
+
+  if (isFunction(config.onMouseoverSquare)) {
+    config.onMouseoverSquare(square, piece, deepCopy(currentPosition), currentOrientation);
+  }
+}
+
+function mouseleaveSquare(e) {
+  const square = e.currentTarget.id;
+  const piece = getPiece(square, currentPosition);
+
+  if (isFunction(config.onMouseoutSquare)) {
+    config.onMouseoutSquare(square, piece, deepCopy(currentPosition), currentOrientation);
   }
 }
 
@@ -469,6 +528,8 @@ function addEventListeners() {
     td.addEventListener('dragstart', drag);
     td.addEventListener('drop', drop);
     td.addEventListener('dragover', allowDrop);
+    td.addEventListener('mouseenter', mouseenterSquare);
+    td.addEventListener('mouseleave', mouseleaveSquare);
   }
 }
 
@@ -478,6 +539,12 @@ function addEventListeners() {
 ==============
 */
 
-generateBoardHTML();
-putPiecesOnBoard(currentPosition);
-addEventListeners();
+/*
+drawBoard();
+makeMove();
+flipBoard();
+*/
+
+if (typeof exports !== 'undefined') {
+  exports.Chessboard = window.Chessboard();
+}

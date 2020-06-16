@@ -8,6 +8,7 @@
       :root {
         --light-square: #f0d9b5;
         --dark-square: #b58860;
+        --square-size: 50px;
       }
       * {
         box-sizing: border-box;
@@ -20,15 +21,12 @@
         width: 100vw;
       }
       table {
-        position: relative;
-        top: 40px;
-        left: 40px;
         border-spacing: 0px;
         user-select: none;
       }
       td {
-        width: 50px;
-        height: 50px;
+        width: var(--square-size);
+        height: var(--square-size);
         overflow: hidden;
       }
       .light-square {
@@ -39,16 +37,140 @@
       }
       .piece {
         pointer-events: none;
-        height: 50px;
-        width: 50px;
+        height: var(--square-size);
+        width: var(--square-size);
       }
       .highlight {
-        box-shadow: inset 0 0 3px 3px yellow;
+        box-shadow: inset 0 0 3px 3px #8a8ac4;
+      }
+      #board {
+        display: flex;
+        padding: 50px;
+      }
+      #pgn {
+        width: var(--square-size) * 4;
+        height: var(--square-size) * 4;
       }
     </style>
   </head>
   <body>
     <div id="board"></div>
   </body>
+  <script src="chess.js"></script>
   <script src="chessboard.js"></script>
+  <script src="ai.js"></script>
+  <script>
+    const moveSound = new Audio('./sound/Move.mp3');
+
+    const game = new Chess();
+
+    let config = {
+      onMouseoutSquare,
+      onMouseoverSquare,
+      onDrop,
+      onDrag,
+    };
+
+    drawBoard();
+
+    function onDrag(source, piece) {
+      // do not pick up pieces if the game is over
+      if (game.game_over()) {
+        alert('Game over');
+      }
+
+      // or if it's not that side's turn
+      if (
+        (game.turn() === 'w' && piece.search(/^b/) !== -1) ||
+        (game.turn() === 'b' && piece.search(/^w/) !== -1)
+      ) {
+        return false;
+      }
+    }
+
+    function onDrop(source, target) {
+      removeHighlight();
+
+      const move = `${source}-${target}`;
+      if (!issueMove(move)) return false;
+
+      return true;
+    }
+
+    function onMouseoverSquare(square, piece) {
+      const moves = game.moves({
+        square: square,
+        verbose: true,
+      });
+
+      if (moves.length === 0) return;
+
+      highlightSquare(square);
+
+      for (move of moves) {
+        highlightSquare(move.to);
+      }
+    }
+
+    function onMouseoutSquare(square, piece) {
+      removeHighlight();
+    }
+
+    // e2-e4
+    function issueMove(move) {
+      [source, target] = move.split('-');
+
+      const tempMove = game.move({
+        from: source,
+        to: target,
+        promotion: 'q',
+      });
+
+      if (tempMove === null) return false;
+
+      drawBoard(fenToObj(game.fen()));
+      moveSound.play();
+
+      if (game.turn() === 'b') {
+        sf.postMessage(`position fen ${game.fen()}`);
+        sf.postMessage('go depth ' + 5);
+      }
+    }
+
+    function makeAIMove(game) {
+      console.log(evaluateBoard(game.board()));
+      game.move(getBestMove(game));
+      drawBoard(fenToObj(game.fen()));
+      if (game.game_over()) {
+        alert('Game over');
+      }
+    }
+  </script>
+  <script>
+    var wasmSupported =
+      typeof WebAssembly === 'object' &&
+      WebAssembly.validate(Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00));
+
+    var sf = new Worker(wasmSupported ? 'stockfish.wasm.js' : 'stockfish.js');
+
+    sf.addEventListener('message', function (e) {
+      if (e.data.startsWith('bestmove')) {
+        const source = e.data.slice(9, 11);
+        const target = e.data.slice(11, 13);
+        const move = `${source}-${target}`;
+        window.setTimeout(() => issueMove(move), 500);
+      }
+      console.log(e.data);
+    });
+
+    //sf.postMessage('setoption name UCI_AnalyseMode value false');
+    //sf.postMessage('setoption name Analysis Contempt value false');
+    setTimeout(() => {
+      console.log('============ START ============');
+      sf.postMessage('setoption name Threads value 16');
+      sf.postMessage('setoption name Hash value 1024');
+      //sf.postMessage(`position fen ${game.fen()}`);
+      //sf.postMessage('go depth ' + 3);
+    }, 3000);
+  </script>
 </html>
