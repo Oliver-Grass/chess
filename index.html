@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chess</title>
+    <style>
+      :root {
+        --light-square: #f0d9b5;
+        --dark-square: #b58860;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0px;
+        padding: 0px;
+      }
+      body {
+        background: #e4e4e4;
+        height: 100vh;
+        width: 100vw;
+      }
+      table {
+        position: relative;
+        top: 40px;
+        left: 40px;
+        border-spacing: 0px;
+        user-select: none;
+      }
+      td {
+        width: 50px;
+        height: 50px;
+        overflow: hidden;
+      }
+      .light-square {
+        background: var(--light-square);
+      }
+      .dark-square {
+        background: var(--dark-square);
+      }
+      .piece {
+        pointer-events: none;
+        height: 50px;
+        width: 50px;
+      }
+      .highlight {
+        box-shadow: inset 0 0 3px 3px yellow;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="board"></div>
+  </body>
+  <script src="chessboard.js"></script>
+</html>
