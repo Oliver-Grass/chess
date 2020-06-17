@@ -130,6 +130,7 @@
 
       drawBoard(fenToObj(game.fen()));
       moveSound.play();
+      document.getElementById('pgn').innerHTML = game.pgn();
 
       if (game.turn() === 'b') {
         sf.postMessage(`position fen ${game.fen()}`);
@@ -163,7 +164,8 @@
       console.log(e.data);
     });
 
-    //sf.postMessage('setoption name UCI_AnalyseMode value false');
+    sf.postMessage('uci');
+    sf.postMessage('setoption name UCI_AnalyseMode value false');
     //sf.postMessage('setoption name Analysis Contempt value false');
     setTimeout(() => {
       console.log('============ START ============');
