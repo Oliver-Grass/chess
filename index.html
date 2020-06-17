@@ -25,7 +25,9 @@
         user-select: none;
       }
       td {
+        min-width: var(--square-size);
         width: var(--square-size);
+        min-height: var(--square-size);
         height: var(--square-size);
         overflow: hidden;
       }
@@ -194,8 +196,6 @@
       console.log('============ START ============');
       sf.postMessage('setoption name Threads value 16');
       sf.postMessage('setoption name Hash value 1024');
-      //sf.postMessage(`position fen ${game.fen()}`);
-      //sf.postMessage('go depth ' + 3);
     }, 3000);
   </script>
 </html>
