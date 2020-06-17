@@ -345,8 +345,6 @@ const generateBoardHTML = (orientation) => {
 
   const pgn = document.createElement('div');
   pgn.id = 'pgn';
-  pgn.innerHTML =
-    '1. e4 e5 2. Nf3 Nf6 3. Bc4 1. e4 e5 2. Nf3 Nf6 3. Bc4 1. e4 e5 2. Nf3 Nf6 3. Bc4 1. e4 e5 2. Nf3 Nf6 3. Bc4';
 
   const table = document.createElement('table');
   for (let i = 0; i < 8; i++) {

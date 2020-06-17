@@ -55,6 +55,13 @@
   </head>
   <body>
     <div id="board"></div>
+
+    <label for="engines">Choose an engine:</label>
+
+    <select name="engines" id="engines">
+      <option value="stockfish">Stockfish</option>
+      <option value="homebrew">Homebrew</option>
+    </select>
   </body>
   <script src="chess.js"></script>
   <script src="chessboard.js"></script>
@@ -132,16 +139,32 @@
       moveSound.play();
       document.getElementById('pgn').innerHTML = game.pgn();
 
+      if (game.game_over()) {
+        alert('Game over');
+      }
+
       if (game.turn() === 'b') {
-        sf.postMessage(`position fen ${game.fen()}`);
-        sf.postMessage('go depth ' + 5);
+        const engine = document.getElementById('engines').value;
+        switch (engine) {
+          case 'stockfish':
+            sf.postMessage(`position fen ${game.fen()}`);
+            sf.postMessage('go depth ' + 5);
+            break;
+          case 'homebrew':
+            makeAIMove(game);
+            break;
+          default:
+            makeAIMove(game);
+            break;
+        }
       }
     }
 
     function makeAIMove(game) {
-      console.log(evaluateBoard(game.board()));
       game.move(getBestMove(game));
       drawBoard(fenToObj(game.fen()));
+      moveSound.play();
+      document.getElementById('pgn').innerHTML = game.pgn();
       if (game.game_over()) {
         alert('Game over');
       }
