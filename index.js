@@ -21,8 +21,10 @@ function setSize() {
   const h = window.innerHeight;
 
   if (w > h) {
+    console.log('h', h);
     setBoardSize((h * 2) / 3);
   } else {
+    console.log('w', w);
     setBoardSize((w * 2) / 3);
   }
 }
@@ -97,6 +99,10 @@ function onDrop(source, target) {
   if (!issueMove(move)) return false;
 
   return true;
+}
+
+function onClick(source, target) {
+  console.log('index');
 }
 
 function onMouseoverSquare(square, piece) {

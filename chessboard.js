@@ -2,7 +2,6 @@ const RUN_ASSERTS = true;
 const COLUMNS = 'abcdefgh'.split('');
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR';
 const START_POSITION = fenToObj(START_FEN);
-const CLICKMOVE = false;
 
 const COLOR_SCHEMES = {
   black_and_white: ['#ffffff', '#333333'],
@@ -31,6 +30,10 @@ const pieceEntityCodes = {
         VALIDATION
 =========================
 */
+function isTouchDevice() {
+  return 'ontouchstart' in window;
+}
+
 function isString(s) {
   return typeof s === 'string';
 }
@@ -337,6 +340,9 @@ let currentPosition = {};
 let squareSize = 50;
 let useSVG = true;
 
+let clickToMove = false;
+if (isTouchDevice()) clickToMove = true;
+
 /*
 =========================
         GAME LOGIC
@@ -363,7 +369,6 @@ const generateBoardHTML = (orientation) => {
 
   for (let i = 0; i < 8; i++) {
     const tr = document.createElement('tr');
-    appendRowNumbersHTML(tr, row);
 
     for (let j = 0; j < 8; j++) {
       const td = document.createElement('td');
@@ -377,6 +382,8 @@ const generateBoardHTML = (orientation) => {
       tr.appendChild(td);
     }
     tbody.appendChild(tr);
+
+    appendRowNumbersHTML(tr, row);
 
     if (orientation === 'white') {
       row = row - 1;
@@ -397,7 +404,7 @@ const appendRowNumbersHTML = (table_row, row_number) => {
 
 const appendColumnLettersHTML = (table, columns) => {
   const tfoot = document.createElement('tfoot');
-  tfoot.innerHTML = `<tr><th>${columns.map((x) => `<th>${x}`).join('')}`;
+  tfoot.innerHTML = `<tr>${columns.map((x) => `<th>${x}`).join('')}<th>`;
   table.appendChild(tfoot);
 };
 
@@ -510,7 +517,7 @@ function allowDrop(e) {
   e.preventDefault();
 }
 
-if (CLICKMOVE) {
+if (clickToMove) {
   let selectedPiece = '';
 
   function boardClick(e) {
@@ -521,20 +528,33 @@ if (CLICKMOVE) {
     const sourceColor = getPieceColor(getPiece(selectedPiece, currentPosition));
 
     if (targetColor !== sourceColor && selectedPiece !== '') {
-      makeMove(selectedPiece, square);
+      const source = selectedPiece;
+      const target = square;
+
+      if (isFunction(config.onDrop)) {
+        const onDrop = config.onDrop(source, target, deepCopy(currentPosition), currentOrientation);
+
+        if (onDrop) {
+          makeMove(source, target);
+        } else {
+          //dont
+        }
+      } else {
+        makeMove(source, target);
+      }
       selectedPiece = '';
     } else {
-      //highlightSquare(square);
+      highlightSquare(square);
       selectedPiece = square;
     }
   }
 } else {
   function boardClick(e) {
     const square = e.target.id.toString();
-    //removeHighlight();
+    removeHighlight();
 
     if (currentPosition.hasOwnProperty(square)) {
-      //highlightSquare(square);
+      highlightSquare(square);
     }
   }
 }
