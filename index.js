@@ -120,7 +120,7 @@ function onMouseoutSquare(square, piece) {
 
 // e2-e4
 function issueMove(move) {
-  [source, target] = move.split('-');
+  const [source, target] = move.split('-');
 
   const tempMove = game.move({
     from: source,
@@ -171,10 +171,17 @@ const sf = new Worker(wasmSupported ? 'stockfish.wasm.js' : 'stockfish.js');
 
 sf.addEventListener('message', function (e) {
   if (e.data.startsWith('bestmove')) {
-    const source = e.data.slice(9, 11);
-    const target = e.data.slice(11, 13);
-    const move = `${source}-${target}`;
-    window.setTimeout(() => issueMove(move), 500);
+    const [x, best, y, ponder] = e.data.split(' ');
+
+    const bestFrom = best.slice(0, 2);
+    const bestTo = best.slice(2, 4);
+    const bestMove = `${bestFrom}-${bestTo}`;
+
+    const ponderFrom = ponder.slice(0, 2);
+    const ponderTo = ponder.slice(2, 4);
+    const ponderMove = `${ponderFrom}-${ponderTo}`;
+
+    window.setTimeout(() => issueMove(bestMove), 500);
     console.log(e.data);
   }
 });
