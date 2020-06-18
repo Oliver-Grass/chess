@@ -11,6 +11,21 @@ const COLOR_SCHEMES = {
   green: ['#f0f0f0', '#507050'],
 };
 
+const pieceEntityCodes = {
+  bP: '&#9823;',
+  bR: '&#9820;',
+  bN: '&#9822;',
+  bB: '&#9821;',
+  bQ: '&#9819;',
+  bK: '&#9818;',
+  wP: '&#9817;',
+  wR: '&#9814;',
+  wN: '&#9816;',
+  wB: '&#9815;',
+  wQ: '&#9813;',
+  wK: '&#9812;',
+};
+
 /*
 =========================
         VALIDATION
@@ -78,7 +93,7 @@ if (RUN_ASSERTS) {
   console.assert(!validPieceCode({}));
 }
 
-function validFen(fen) {
+function validFEN(fen) {
   if (!isString(fen)) return false;
 
   // cut off any move, castling, etc info from the end
@@ -103,17 +118,17 @@ function validFen(fen) {
 }
 
 if (RUN_ASSERTS) {
-  console.assert(validFen(START_FEN));
-  console.assert(validFen('8/8/8/8/8/8/8/8'));
-  console.assert(validFen('r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R'));
-  console.assert(validFen('3r3r/1p4pp/2nb1k2/pP3p2/8/PB2PN2/p4PPP/R4RK1 b - - 0 1'));
-  console.assert(!validFen('3r3z/1p4pp/2nb1k2/pP3p2/8/PB2PN2/p4PPP/R4RK1 b - - 0 1'));
-  console.assert(!validFen('anbqkbnr/8/8/8/8/8/PPPPPPPP/8'));
-  console.assert(!validFen('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/'));
-  console.assert(!validFen('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBN'));
-  console.assert(!validFen('888888/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'));
-  console.assert(!validFen('888888/pppppppp/74/8/8/8/PPPPPPPP/RNBQKBNR'));
-  console.assert(!validFen({}));
+  console.assert(validFEN(START_FEN));
+  console.assert(validFEN('8/8/8/8/8/8/8/8'));
+  console.assert(validFEN('r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R'));
+  console.assert(validFEN('3r3r/1p4pp/2nb1k2/pP3p2/8/PB2PN2/p4PPP/R4RK1 b - - 0 1'));
+  console.assert(!validFEN('3r3z/1p4pp/2nb1k2/pP3p2/8/PB2PN2/p4PPP/R4RK1 b - - 0 1'));
+  console.assert(!validFEN('anbqkbnr/8/8/8/8/8/PPPPPPPP/8'));
+  console.assert(!validFEN('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/'));
+  console.assert(!validFEN('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBN'));
+  console.assert(!validFEN('888888/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'));
+  console.assert(!validFEN('888888/pppppppp/74/8/8/8/PPPPPPPP/RNBQKBNR'));
+  console.assert(!validFEN({}));
 }
 
 function validPositionObject(pos) {
@@ -198,7 +213,7 @@ function pieceCodeToFen(piece) {
 
 // convert FEN string to position object
 function fenToObj(fen) {
-  if (!validFen(fen)) return false;
+  if (!validFEN(fen)) return false;
 
   // cut off any move, castling, etc info from the end
   // we're only interested in position information
@@ -320,6 +335,7 @@ function calculatePositionFromMoves(position, moves) {
 let currentOrientation = 'white';
 let currentPosition = {};
 let squareSize = 50;
+let useSVG = true;
 
 /*
 =========================
@@ -328,7 +344,6 @@ let squareSize = 50;
 */
 
 currentPosition = deepCopy(START_POSITION);
-let newPos = calculatePositionFromMoves(currentPosition, ['e2-e4', 'e7-e5', 'e4-e5']);
 
 const generateBoardHTML = (orientation) => {
   const boardDiv = document.getElementById('board');
@@ -343,12 +358,13 @@ const generateBoardHTML = (orientation) => {
     row = 1;
   }
 
-  const pgn = document.createElement('div');
-  pgn.id = 'pgn';
-
   const table = document.createElement('table');
+  const tbody = document.createElement('tbody');
+
   for (let i = 0; i < 8; i++) {
     const tr = document.createElement('tr');
+    appendRowNumbersHTML(tr, row);
+
     for (let j = 0; j < 8; j++) {
       const td = document.createElement('td');
       td.id = `${columns[j]}${row}`;
@@ -360,7 +376,7 @@ const generateBoardHTML = (orientation) => {
       }
       tr.appendChild(td);
     }
-    table.appendChild(tr);
+    tbody.appendChild(tr);
 
     if (orientation === 'white') {
       row = row - 1;
@@ -369,30 +385,58 @@ const generateBoardHTML = (orientation) => {
     }
   }
   boardDiv.appendChild(table);
-  boardDiv.appendChild(pgn);
+  table.appendChild(tbody);
+  appendColumnLettersHTML(table, columns);
+};
+
+const appendRowNumbersHTML = (table_row, row_number) => {
+  const th = document.createElement('th');
+  th.innerHTML = row_number;
+  table_row.appendChild(th);
+};
+
+const appendColumnLettersHTML = (table, columns) => {
+  const tfoot = document.createElement('tfoot');
+  tfoot.innerHTML = `<tr><th>${columns.map((x) => `<th>${x}`).join('')}`;
+  table.appendChild(tfoot);
 };
 
 const putPiecesOnBoard = (position) => {
   for (const [square, piece] of Object.entries(position)) {
     const td = document.getElementById(square);
-    td.innerHTML = `
-    <div class="piece">
-      <img src="./img/${piece}.svg" height="100%" width="100%"></img>
-    </div>`;
+    if (useSVG) {
+      td.innerHTML = `
+      <div class="piece">
+        <img src="./img/${piece}.svg" height="100%" width="100%"></img>
+      </div>`;
+    } else {
+      td.innerHTML = `
+      <div class="piece">
+        ${pieceEntityCodes[piece]}
+      </div>`;
+    }
   }
 };
 
+const setPosition = (position) => {
+  currentPosition = position;
+};
+
 const drawBoard = (position = currentPosition, orientation = currentOrientation) => {
-  currentPosition = deepCopy(position);
-  if (validFen(currentPosition)) {
-    currentPosition = fenToObj(currentPosition);
-  } else if (!validPositionObject(currentPosition)) {
+  let pos = deepCopy(position);
+  setPosition(pos);
+
+  if (validFEN(pos)) {
+    pos = fenToObj(pos);
+  } else if (!validPositionObject(pos)) {
     console.error('Invalid Position!');
+    return false;
   }
 
   generateBoardHTML(orientation);
-  putPiecesOnBoard(position);
+  putPiecesOnBoard(pos);
   addEventListeners();
+  return true;
 };
 
 const setColorScheme = (colorScheme) => {
@@ -428,11 +472,12 @@ function makeMove(source, target) {
 */
 
 function drag(e) {
+  const position = deepCopy(currentPosition);
   const source = e.target.id;
-  const piece = getPiece(source, currentPosition);
+  const piece = getPiece(source, position);
 
   let img = new Image(squareSize, squareSize);
-  img.src = `./img/${getPiece(e.target.id, currentPosition)}.svg`;
+  img.src = `./img/${piece}.svg`;
 
   e.dataTransfer.setData('square', e.target.id);
   e.dataTransfer.setDragImage(img, 20, 20);
