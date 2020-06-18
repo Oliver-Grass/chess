@@ -171,7 +171,7 @@ const sf = new Worker(wasmSupported ? 'stockfish.wasm.js' : 'stockfish.js');
 
 sf.addEventListener('message', function (e) {
   if (e.data.startsWith('bestmove')) {
-    const [x, best, y, ponder] = e.data.split(' ');
+    const [, best, , ponder] = e.data.split(' ');
 
     const bestFrom = best.slice(0, 2);
     const bestTo = best.slice(2, 4);
