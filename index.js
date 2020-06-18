@@ -21,10 +21,8 @@ function setSize() {
   const h = window.innerHeight;
 
   if (w > h) {
-    console.log('h', h);
     setBoardSize((h * 2) / 3);
   } else {
-    console.log('w', w);
     setBoardSize((w * 2) / 3);
   }
 }
@@ -137,6 +135,7 @@ function issueMove(move) {
   if (tempMove === null) return false;
 
   populateGUI();
+  highlightMove(move);
 
   if (game.turn() !== config.playerside) {
     const engine = document.getElementById('engines').value;

@@ -166,6 +166,15 @@ function highlightSquare(square) {
   document.getElementById(square).classList.add('highlight');
 }
 
+function highlightMove(move) {
+  const [source, target] = move.split('-');
+  const sourceSquare = document.getElementById(source);
+  const targetSquare = document.getElementById(target);
+
+  sourceSquare.classList.toggle('move-highlight');
+  targetSquare.classList.toggle('move-highlight');
+}
+
 function removeHighlight() {
   const squares = document.getElementsByClassName('highlight');
   while (squares.length) {
